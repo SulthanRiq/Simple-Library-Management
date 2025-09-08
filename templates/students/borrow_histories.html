@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Histories
+{% endblock %}
+
+{% block main %}
+    <table class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+                <th>Book Title</th>
+                <th>Book Writer</th>
+                <th>Borrow Date</th>
+                <th>Return Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for history in histories_info %}
+            {% if history.status == "Returned" %}
+                <tr>
+                    <td>{{ history.book_title }}</td>
+                    <td>{{ history.book_writer }}</td>
+                    <td>{{ history.borrow_date }}</td>
+                    <td>{{ history.return_date }}</td>
+                    <td>{{ history.status }}</td>
+                </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

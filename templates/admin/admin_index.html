@@ -1,0 +1,73 @@
+{% extends "layout_admin.html" %}
+
+{% block title %}
+    Admin
+{% endblock %}
+
+{% block main %}
+    <table class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Book Title</th>
+                <th>Book Writer</th>
+                <th>Borrow Date</th>
+                <th>Return Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+                <tr>
+                    <td>{{ book.student_name }}</td>
+                    <td>{{ book.book_title }}</td>
+                    <td>{{ book.book_writer }}</td>
+                    <td>{{ book.borrow_date }}</td>
+                    <td>{{ book.return_date }}</td>
+                    <td>{{ book.status }}</td>
+                    {% if book.status == "Borrowed" %}
+                    <td>
+                        <button class="btn btn-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmReturnModal"
+                                data-book-id="{{ book.borrow_id }}">
+                            Return
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="modal fade" id="confirmReturnModal" tabindex="-1" aria-labelledby="confirmReturnLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="returnForm" method="post" action="/return_book">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmReturnLabel">Confirm Return</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to mark this book as returned?
+                        <input type="hidden" name="borrow_id" id="borrowIdInput">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Yes, Return</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const confirmReturnModal = document.getElementById('confirmReturnModal');
+        confirmReturnModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const borrowId = button.getAttribute('data-book-id');
+            document.getElementById('borrowIdInput').value = borrowId;
+        });
+    </script>
+{% endblock %}

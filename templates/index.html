@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block main %}
+    <table class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+                <th>Book Title</th>
+                <th>Book Writer</th>
+                <th>Borrow Date</th>
+                <th>Return Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+            {% if book.status == "Borrowed" %}
+                <tr>
+                    <td>{{ book.book_title }}</td>
+                    <td>{{ book.book_writer }}</td>
+                    <td>{{ book.borrow_date }}</td>
+                    <td>{{ book.return_date }}</td>
+                    <td>{{ book.status }}</td>
+                </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
