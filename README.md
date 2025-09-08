@@ -1,5 +1,5 @@
 # Simple Library Management
-#### Video Demo: 
+#### Video Demo: https://youtu.be/ZG30vHBrmJA
 #### Description: 
 
 This project is the **Final Project** for the CS50x course, developed using the **Flask** framework. It is a simple **Library Management System** web application that allows two types of users: **students** and **administrators (admin)** to interact with the system for digital book borrowing and returning.
