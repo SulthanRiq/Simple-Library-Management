@@ -1,5 +1,6 @@
 from flask import Flask, render_template, session, redirect, request, flash, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 from sqlalchemy import select, insert, update
 from datetime import datetime
 
@@ -7,19 +8,28 @@ from helpers import login_required, admin_required
 from models import Borrow, Students
 from database import db_session, Base, engine
 
-import os
+import os, time
+
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
 app.secret_key = "super secret key"
 
 app.jinja_env.auto_reload = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if __name__ == "__main__":
     app.debug(True)
     app.run()
 
 Base.metadata.create_all(bind=engine)
+
 
 @app.after_request
 def after_request(response):
@@ -28,11 +38,16 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
 @app.route("/")
 @login_required
 def index():
 
-    books = db_session.query(Borrow.book_title, Borrow.book_writer, Borrow.borrow_date, Borrow.return_date, Borrow.status).filter(
+    books = db_session.query(Borrow.borrow_id ,Borrow.book_title, Borrow.book_writer, Borrow.borrow_date, Borrow.return_date, Borrow.status, Borrow.image_path).filter(
         Borrow.student_id == session["user_id"]
     ).all()
 
@@ -156,18 +171,30 @@ def borrow():
 
     book_title = request.form.get("book_title")
     book_writer = request.form.get("book_writer")
+    publication_year = request.form.get("publication_year")
     borrow_date_str = request.form.get("borrow_date")
     return_date_str = request.form.get("return_date")
+    upload_file = request.files.get("book_image")
 
     if request.method == "POST":
         if book_title == "":
             return render_template("errors/error.html")
         elif book_writer == "":
             return render_template("errors/error.html")
+        elif publication_year == "":
+            return render_template("errors/error.html")
         elif not borrow_date_str:
             return render_template("errors/error.html")
         elif not return_date_str:
             return render_template("errors/error.html")
+        
+        if not upload_file or upload_file.filename == '':
+            return "No file selected", 400
+        
+        if upload_file and allowed_file(upload_file.filename):
+            filename = str(int(time.time())) + "_" + secure_filename(upload_file.filename)
+            filepath = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], filename)
+            upload_file.save(filepath)
         
         borrow_date = datetime.strptime(borrow_date_str, "%Y-%m-%d").date()
         return_date = datetime.strptime(return_date_str, "%Y-%m-%d").date()
@@ -176,10 +203,13 @@ def borrow():
             student_id=session["user_id"],
             book_title=book_title,
             book_writer=book_writer,
+            publication_year=publication_year,
+            image_path=filepath,
             borrow_date=borrow_date,
             return_date=return_date,
             status="Borrowed"
         )
+
 
         db_session.add(new_borrow)
         db_session.commit()

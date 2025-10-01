@@ -13,6 +13,7 @@
                 <th>Borrow Date</th>
                 <th>Return Date</th>
                 <th>Status</th>
+                <th>Picture</th>
             </tr>
         </thead>
         <tbody>
@@ -24,6 +25,29 @@
                     <td>{{ book.borrow_date }}</td>
                     <td>{{ book.return_date }}</td>
                     <td>{{ book.status }}</td>
+                    <td>
+                        {% if book.image_path %}
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ book.borrow_id }}">
+                            Show
+                        </button>
+
+                        <div class="modal fade" id="modal{{ book.borrow_id }}" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">{{ book.book_title }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body text-center">
+                                <img src="{{ url_for('static', filename='uploads/' ~ book.image_path) }}" alt="Book Picture" class="img-fluid rounded">
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {% else %}
+                            <span class="text-muted">No Image</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endif %}
             {% endfor %}

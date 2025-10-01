@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+.venv/
+
+# SQLite database (development only)
+library.db
+
+# Environment variables
+.env
+
+# Flask migration files (opsional)
+migrations/
+
+# VSCode/IDE settings
+.vscode/
+.idea/
