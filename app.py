@@ -47,7 +47,7 @@ def allowed_file(filename):
 @login_required
 def index():
 
-    books = db_session.query(Borrow.borrow_id ,Borrow.book_title, Borrow.book_writer, Borrow.borrow_date, Borrow.return_date, Borrow.status, Borrow.image_path).filter(
+    books = db_session.query(Borrow.borrow_id ,Borrow.book_title, Borrow.book_writer, Borrow.publication_year,Borrow.borrow_date, Borrow.return_date, Borrow.status, Borrow.image_path).filter(
         Borrow.student_id == session["user_id"]
     ).all()
 
@@ -70,6 +70,7 @@ def admin_index():
         Borrow.borrow_date,
         Borrow.return_date,
         Borrow.status,
+        Borrow.image_path,
         Students.username.label("student_name")
     ).join(Students, Borrow.student_id == Students.id).all()
 
@@ -193,7 +194,7 @@ def borrow():
         
         if upload_file and allowed_file(upload_file.filename):
             filename = str(int(time.time())) + "_" + secure_filename(upload_file.filename)
-            filepath = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], filename)
+            filepath = os.path.join(app.root_path, "static/uploads", filename)
             upload_file.save(filepath)
         
         borrow_date = datetime.strptime(borrow_date_str, "%Y-%m-%d").date()
@@ -204,7 +205,7 @@ def borrow():
             book_title=book_title,
             book_writer=book_writer,
             publication_year=publication_year,
-            image_path=filepath,
+            image_path=filename,
             borrow_date=borrow_date,
             return_date=return_date,
             status="Borrowed"
