@@ -8,7 +8,7 @@ from helpers import login_required, admin_required
 from models import Borrow, Students
 from database import db_session, Base, engine
 
-import os, time
+import os, time, re
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 
@@ -23,6 +23,7 @@ app.secret_key = "super secret key"
 app.jinja_env.auto_reload = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
 if __name__ == "__main__":
     app.debug(True)
@@ -42,6 +43,9 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.errorhandler(413)
+def too_large(e):
+    return render_template("students/borrow_page.html", error="File is too large (Max 2 MB)!"), 413
 
 @app.route("/")
 @login_required
@@ -82,6 +86,7 @@ def admin_index():
 def login():
 
     session.clear()
+    error_message = None
 
     if request.method == "POST":
 
@@ -89,7 +94,7 @@ def login():
         password = request.form.get("password")
 
         if not username or not password:
-            return render_template("errors/error.html")
+            error_message = "You must enter an username and password!"
         
         if username == "admin" and password == "12345678":
             session["is_admin"] = True
@@ -103,8 +108,13 @@ def login():
         # ):
         #     return render_template("errors/error.html")
 
-        if rows is None or not check_password_hash(rows.password, password):
-            return render_template("errors/error.html")
+        if rows is None:
+            error_message = "Username not found!"
+            return render_template("students/student_login.html", error=error_message)
+
+        if not check_password_hash(rows.password, password):
+            error_message = "Wrong password!"
+            return render_template("students/student_login.html", error=error_message)
 
         session["user_id"] = rows.id
         session["is_admin"] = False    
@@ -112,7 +122,7 @@ def login():
         return redirect("/")
     
     else:
-        return render_template("students/student_login.html")
+        return render_template("students/student_login.html", error=error_message)
 
 
 
@@ -128,6 +138,8 @@ def logout():
 @app.route("/register", methods=["GET", "POST"])
 def register():
 
+    error_message = None
+
     username = request.form.get("username")
     student_number = request.form.get("student_number")
     password = request.form.get("password")
@@ -135,15 +147,32 @@ def register():
 
     if request.method == "POST":
         if username == "":
-            return render_template("errors/error.html")
+            error_message = "You must input an username!"
+            return render_template("students/student_register.html", error=error_message)
         elif student_number == "":
-            return render_template("errors/error.html")
+            error_message = "You must input your student number!"
+            return render_template("students/student_register.html", error=error_message)
         elif password == "":
-            return render_template("errors/error.html")
+            error_message = "You must input a password!"
+            return render_template("students/student_register.html", error=error_message)
         elif confirm_password == "":
-            return render_template("errors/error.html")
+            error_message = "You must input a confirm password!"
+            return render_template("students/student_register.html", error=error_message)
         elif password != confirm_password:
-            return render_template("errors/error.html")
+            error_message = "Password and confirm password does not match!"
+            return render_template("students/student_register.html", error=error_message)
+        elif len(username) > 15:
+            error_message = "You must input an username less than equal to 15 characters!"
+            return render_template("students/student_register.html", error=error_message)
+        elif len(password) > 15:
+            error_message = "You must input a password less than equal to 15 characters!"
+            return render_template("students/student_register.html", error=error_message)
+        elif len(student_number) > 15:
+            error_message = "You must input a student number less than equal to 15 characters!"
+            return render_template("students/student_register.html", error=error_message)
+        elif not re.match(r'^\d+$', student_number):
+            error_message = "You must input a number on student number!"
+            return render_template("students/student_register.html", error=error_message)
         else:
             try:
                 hash = generate_password_hash(password)
@@ -170,6 +199,8 @@ def register():
 @login_required
 def borrow():
 
+    error_message = None
+
     book_title = request.form.get("book_title")
     book_writer = request.form.get("book_writer")
     publication_year = request.form.get("publication_year")
@@ -179,18 +210,47 @@ def borrow():
 
     if request.method == "POST":
         if book_title == "":
-            return render_template("errors/error.html")
+            error_message = "You must input a book title!"
+            return render_template("students/borrow_page.html", error=error_message)
         elif book_writer == "":
-            return render_template("errors/error.html")
+            error_message = "You must input a book writer!"
+            return render_template("students/borrow_page.html", error=error_message)
         elif publication_year == "":
-            return render_template("errors/error.html")
+            error_message = "You must input a book publication year!"
+            return render_template("students/borrow_page.html", error=error_message)
         elif not borrow_date_str:
-            return render_template("errors/error.html")
+            error_message = "You must input a borrow date!"
+            return render_template("students/borrow_page.html", error=error_message)
         elif not return_date_str:
-            return render_template("errors/error.html")
+            error_message = "You must input a return date!"
+            return render_template("students/borrow_page.html", error=error_message)
+        elif len(book_title) > 25:
+            error_message = "You must input a book title less than equal to 25!"
+            return render_template("students/borrow_page.html", error=error_message)
+        elif len(book_writer) > 15:
+            error_message = "You must input a book writer less than equal to 15!"
+            return render_template("students/borrow_page.html", error=error_message)
+        elif not re.match(r'^\d+$', publication_year):
+            error_message = "You must input a number on publication year!"
+            return render_template("students/borrow_page.html", error=error_message)
+        
+        try:
+            borrow_date = datetime.strptime(borrow_date_str, "%Y-%m-%d")
+            return_date = datetime.strptime(return_date_str, "%Y-%m-%d")
+        except ValueError:
+            error_message = "Invalid date format!"
+            return render_template("students/borrow_page.html", error=error_message)
+        
+        if return_date < borrow_date:
+            error_message = "The return date must be not before the borrow date!"
+            return render_template("students/borrow_page.html", error=error_message)
         
         if not upload_file or upload_file.filename == '':
             return "No file selected", 400
+        
+        if not allowed_file(upload_file.filename):
+            error_message = "Invalid file format. Only JPG, JPEG, PNG!"
+            return render_template("students/borrow_page.html", error=error_message)
         
         if upload_file and allowed_file(upload_file.filename):
             filename = str(int(time.time())) + "_" + secure_filename(upload_file.filename)
